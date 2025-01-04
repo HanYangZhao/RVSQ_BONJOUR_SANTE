@@ -713,6 +713,7 @@ class AppGUI:
     def stop_search(self):
         self.search_running = False
         self.status = "Stopping..."
+        self.search_thread_1_start = False
 
     def run_search(self,website):
         config = {
@@ -722,16 +723,17 @@ class AppGUI:
             }
         }
         
-        try:
-            if(website == 'rvsq'):
-                self.run_browser_automation_rvsq(config)
-            elif ( website == 'bonjoursante'):
-                self.run_browser_automation_bonjoursante(config)
-        except Exception as e:
-            self.log_message(f"Error: {str(e)}")
-        finally:
-            self.search_running = False
-            self.status = "Ready to start"
+        while self.search_running:
+            try:
+                if(website == 'rvsq'):
+                    self.run_browser_automation_rvsq(config)
+                elif ( website == 'bonjoursante'):
+                    self.run_browser_automation_bonjoursante(config)
+            except Exception as e:
+                self.log_message(f"Error: {str(e)}")
+            finally:
+                # self.search_running = False
+                self.status = "Ready to start"
 
     def run_browser_automation_rvsq(self, config):
         # Create screenshots directories
@@ -762,8 +764,9 @@ class AppGUI:
                     context = browser.new_context(
                         user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
                     )
+                    context.set_default_timeout(60000) # increase from 30 sec to 60 secs for general timeout
                     page = context.new_page()
-                    
+
                     self.log_message("[RVSQ] Navigating to form page...")
                     page.goto(
                         'https://rvsq.gouv.qc.ca/prendrerendezvous/Principale.aspx',
@@ -896,11 +899,12 @@ class AppGUI:
                             page.screenshot(path=screenshot_path, full_page=True)
                             self.log_message(f"Screenshot saved: {screenshot_path}")
                             page.wait_for_timeout(99999999)
+                            break
                         
                         if not self.search_running:
                             break
                             
-                        page.wait_for_timeout(random.randint(2000, 10000))
+                        page.wait_for_timeout(random.randint(1000, 5000))
                             
                         
                 except Exception as e:
@@ -983,7 +987,7 @@ class AppGUI:
                     date = datetime.today().strftime('%Y-%m-%d')
                     frameLocator.locator('#mat-input-0').fill(date)
                     frameLocator.locator('button#confirm').click()
-                    page.wait_for_timeout(random.randint(2000, 10000)) # This is a hack, not sure how to wait for selector in iframe
+                    page.wait_for_timeout(random.randint(1000, 5000)) # This is a hack, not sure how to wait for selector in iframe
                     frameLocator.locator('button#continue').click()
 
                     while self.search_running: 
@@ -1018,8 +1022,8 @@ class AppGUI:
                             screenshot_path = os.path.join("screenshots", f"slot_found_{timestamp}.png")
                             page.screenshot(path=screenshot_path, full_page=True)
                             self.log_message(f"Screenshot saved: {screenshot_path}")
+                            context.set_default_timeout(99999999)
                             page.wait_for_timeout(99999999)
-                            self.search_running = False
                             break
 
                         if not self.search_running:
