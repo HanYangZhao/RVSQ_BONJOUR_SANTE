@@ -996,10 +996,11 @@ class AppGUI:
                         frameLocator = page.frame_locator("iframe[src*='hub.bonjour-sante.ca']")
 
                         # Check if the message container exists
-                        error = frameLocator.get_by_text('Une erreur est survenue lors de la recherche de consultations. ')
-                        not_found = frameLocator.get_by_text("Aucun rendez-vous ne correspond à vos critères de recherche", exact=True)
-                        if not_found or error:
-                            if not_found:
+                        not_found = 'Aucun rendez-vous ne correspond à vos critères de recherche' in frameLocator.locator("span.label-message").inner_text()
+                        error = 'Une erreur est survenue lors de la recherche de consultations' in frameLocator.locator("span.label-message").inner_text()
+          
+                        if not_found is True or error is True:
+                            if not_found is True:
                                 self.log_message("[BonjourSante] No slots available")
                                 frameLocator.locator('[data-test="make-new-search"]').click()
                             else:
