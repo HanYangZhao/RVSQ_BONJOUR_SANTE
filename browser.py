@@ -15,8 +15,8 @@ def get_playwright_path():
     return None
 
 def slot_found(page):
-    log_message("🎉 RVSQ SLOT FOUND! 🎉")
-    print("🎉 RVSQ SLOT FOUND! 🎉")
+    log_message("🎉 SLOT FOUND! 🎉")
+    print("🎉 SLOT FOUND! 🎉")
     winsound.Beep(1000, 500)
     winsound.Beep(2000, 500)
     winsound.Beep(1000, 500)
@@ -183,7 +183,7 @@ def run_automation_rvsq(config, search_running):
                         log_message("[RVSQ] No slots available")
                     elif clinic_section.is_visible():
                         slot_found(page)
-                        page.wait_for_timeout(99999999)
+                        page.wait_for_timeout(240000) # wait 4 minutes
                     
                     if not search_running.get():
                         break
@@ -277,24 +277,28 @@ def run_automation_bonjoursante(config, search_running, autobook):
                 while search_running.get(): 
                     frameLocator.locator('div.title-criteria-container').wait_for(state = 'visible') # wait for "Résultats de recherche" to load
                     log_message("[BonjourSante] Searching for slots...")
-                    # iframe = page.query_selector("iframe[src*='hub.bonjour-sante.ca']").content_frame().content()
+                    iframe_content = page.query_selector("iframe[src*='hub.bonjour-sante.ca']").content_frame().content()
                     # print('Aucun rendez-vous ne correspond à vos critères de recherche' in iframe)
-                    if frameLocator.locator('app-locked-walkin-availability[data-test="locked-walkin-availability"]').count() > 0 :
+                    if frameLocator.locator('app-locked-walkin-availability[data-test="locked-walkin-availability"]').count() > 0 or 'Consultation réservée pour vous' in iframe_content  :
                         slot_found(page)
                         if (autobook):
                             frameLocator.locator('button[data-test="confirm-selection-button"]').click()
                             #load the next page
-                            frameLocator.locator('app-registration.ng-star-inserted').wait_for(state = 'visible') # wait for the 'Inscription du patient' to load
+                            frameLocator.locator('#confirmation-checkbox-input').wait_for(state='visible')
                             frameLocator.locator('input#cellPhone').fill(format_phone_number(personal_info['cellphone']))
                             frameLocator.locator('input#email').fill((personal_info['email']))
-                            frameLocator.locator('select#reasons').select_option({'value' : '28'}) # Reason : Autres
+                            frameLocator.locator('select#reasons').select_option(value='28') # Reason : Autres
                             frameLocator.locator('#confirmation-checkbox-input').check()
                             frameLocator.locator('#confirm').click()
+                            frameLocator.locator('button[data-test="registration-dialog-submit-btn"]').click()
+                            frameLocator.locator('lib-alert').wait_for(state='visible')
                             search_running.set(False)
                             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                             screenshot_path = os.path.join("screenshots", f"slot_confirmed_{timestamp}.png")
                             page.screenshot(path=screenshot_path, full_page=True)
                             log_message(f"Screenshot saved: {screenshot_path}")
+                            # context.set_default_timeout(240000) # wait for 4 imnutes
+                            # page.wait_for_timeout(240000)
                             break
                         else:
                             context.set_default_timeout(240000) # wait for 4 imnutes

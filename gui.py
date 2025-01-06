@@ -146,7 +146,7 @@ class AppGUI:
                 'label': self.get_text('postal_code'),
                 'placeholder': self.get_text('placeholder_postal_code')
             },
-            'phone': {
+            'cellphone': {
                 'text': '',
                 'rect': pygame.Rect(self.center_x, start_y + spacing*5, self.field_width, self.field_height),
                 'label': self.get_text('cellphone'),
@@ -496,9 +496,9 @@ class AppGUI:
         self.search_thread_1 = threading.Thread(target=self.run_search, args=('bonjoursante', self.search_running, self.autobook))
         self.search_thread_1.daemon = True
         self.search_thread_1.start()
-        # self.search_thread_2 = threading.Thread(target=self.run_search, args=('rvsq', self.search_running,))
-        # self.search_thread_2.daemon = True
-        # self.search_thread_2.start()
+        self.search_thread_2 = threading.Thread(target=self.run_search, args=('rvsq', self.search_running, False))
+        self.search_thread_2.daemon = True
+        self.search_thread_2.start()
     def stop_search(self):
         self.search_running.set(False)
         self.status = "Stopping..."
