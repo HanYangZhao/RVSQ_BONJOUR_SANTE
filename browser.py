@@ -28,6 +28,7 @@ def slot_found(page):
     page.screenshot(path=screenshot_path, full_page=True)
     log_message(f"Screenshot saved: {screenshot_path}")
 
+
 def run_automation_rvsq(config, search_running):
     # Create screenshots directories
     for directory in ["screenshots", "error_screenshots"]:
@@ -37,7 +38,7 @@ def run_automation_rvsq(config, search_running):
     with sync_playwright() as playwright:
         browser = None
         context = None
-        while search_running:
+        while search_running.get():
             try:
                 log_message("[DEBUG] Starting browser automation...")
                 
@@ -160,7 +161,7 @@ def run_automation_rvsq(config, search_running):
                         page.evaluate('document.getElementById("perimeterCombo").value = "4"')
 
 
-                while search_running:  # Check if we should continue running
+                while search_running.get():  # Check if we should continue running
                     log_message("[RVSQ] Searching for slots...")
                     page.fill('#PostalCode', personal_info['postal_code'])
                     page.click('button.h-SearchButton.btn.btn-primary:has-text("Rechercher")')
@@ -184,7 +185,7 @@ def run_automation_rvsq(config, search_running):
                         slot_found(page)
                         page.wait_for_timeout(99999999)
                     
-                    if not search_running:
+                    if not search_running.get():
                         break
                         
                     page.wait_for_timeout(random.randint(1000, 5000))
@@ -210,7 +211,7 @@ def run_automation_bonjoursante(config, search_running):
     with sync_playwright() as playwright:
         browser = None
         context = None
-        while search_running:
+        while search_running.get():
             try:
                 log_message("[BonjourSante] Starting browser automation...")
                 
@@ -273,7 +274,7 @@ def run_automation_bonjoursante(config, search_running):
                 slider.evaluate("(element) => element.dispatchEvent(new Event('change'))")
                 frameLocator.locator('button#confirm').click()
                 frameLocator.locator('button#continue').click()
-                while search_running: 
+                while search_running.get(): 
                     frameLocator.locator('div.title-criteria-container').wait_for(state = 'visible') # wait for "Résultats de recherche" to load
                     log_message("[BonjourSante] Searching for slots...")
                     # iframe = page.query_selector("iframe[src*='hub.bonjour-sante.ca']").content_frame().content()
@@ -283,10 +284,12 @@ def run_automation_bonjoursante(config, search_running):
                         frameLocator.locator('button#[data-test="confirm-selection-button"]').click()
                         frameLocator.locator('app-registration.ng-star-inserted').wait_for(state = 'visible') # wait for the 'Inscription du patient' to load
 
+                        
+                        search_running.set(False)
                         context.set_default_timeout(240000) # wait for 4 imnutes
                         page.wait_for_timeout(240000)
-                        log_message('[BonjourSante] Failed to book slot Bonjour Sante, timer expired')
-                        raise RuntimeError('Failed to book slot Bonjour Sante, timer expired')
+                        # log_message('[BonjourSante] Failed to book slot Bonjour Sante, timer expired')
+                        # raise RuntimeError('Failed to book slot Bonjour Sante, timer expired')
                     elif frameLocator.locator('div.t-alert-content').count() > 0 :
                         log_message("[BonjourSante] Une erreur est survenue lors de la recherche de consultations.")
                         frameLocator.locator('a.link').click()

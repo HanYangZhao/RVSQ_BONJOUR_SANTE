@@ -6,7 +6,7 @@ import browser
 import sys
 import json
 import os
-from logger import default_message_queue, log_message, get_text
+from logger import default_message_queue, log_message
 
 class AppGUI:
     def __init__(self):
@@ -68,7 +68,7 @@ class AppGUI:
         
         # Language setup
         self.languages = languages
-        self.current_language = current_language
+        self.current_language = 'Français'
         self.language_dropdown_open = False
         
         # Language button - wider to accommodate all languages and moved to top-right
@@ -115,50 +115,50 @@ class AppGUI:
             'first_name': {
                 'text': '',
                 'rect': pygame.Rect(self.center_x, start_y, self.field_width, self.field_height),
-                'label': get_text('first_name'),
-                'placeholder': get_text('placeholder_first_name')
+                'label': self.get_text('first_name'),
+                'placeholder': self.get_text('placeholder_first_name')
             },
             'last_name': {
                 'text': '',
                 'rect': pygame.Rect(self.center_x, start_y + spacing, self.field_width, self.field_height),
-                'label': get_text('last_name'),
-                'placeholder': get_text('placeholder_last_name')
+                'label': self.get_text('last_name'),
+                'placeholder': self.get_text('placeholder_last_name')
             },
             'nam': {
                 'text': '',
                 'rect': pygame.Rect(self.center_x, start_y + spacing*2, self.field_width, self.field_height),
-                'label': get_text('nam'),
-                'placeholder': get_text('placeholder_nam')
+                'label': self.get_text('nam'),
+                'placeholder': self.get_text('placeholder_nam')
             },
             'card_seq_number': {
                 'text': '',
                 'rect': pygame.Rect(self.center_x, start_y + spacing*3, self.field_width, self.field_height),
-                'label': get_text('card_seq_number'),
-                'placeholder': get_text('placeholder_card_seq')
+                'label': self.get_text('card_seq_number'),
+                'placeholder': self.get_text('placeholder_card_seq')
             },
             'postal_code': {
                 'text': '',
                 'rect': pygame.Rect(self.center_x, start_y + spacing*4, self.field_width, self.field_height),
-                'label': get_text('postal_code'),
-                'placeholder': get_text('placeholder_postal_code')
+                'label': self.get_text('postal_code'),
+                'placeholder': self.get_text('placeholder_postal_code')
             },
             'birth_day': {
                 'text': '',
                 'rect': pygame.Rect(self.center_x, start_y + spacing*5, self.field_width//3 - 10, self.field_height),
-                'label': get_text('birth_day'),
-                'placeholder': get_text('placeholder_birth_day')
+                'label': self.get_text('birth_day'),
+                'placeholder': self.get_text('placeholder_birth_day')
             },
             'birth_month': {
                 'text': '',
                 'rect': pygame.Rect(self.center_x + self.field_width//3, start_y + spacing*5, self.field_width//3 - 10, self.field_height),
-                'label': get_text('birth_month'),
-                'placeholder': get_text('placeholder_birth_month')
+                'label': self.get_text('birth_month'),
+                'placeholder': self.get_text('placeholder_birth_month')
             },
             'birth_year': {
                 'text': '',
                 'rect': pygame.Rect(self.center_x + 2*(self.field_width//3), start_y + spacing*5, self.field_width//3, self.field_height),
-                'label': get_text('birth_year'),
-                'placeholder': get_text('placeholder_birth_year')
+                'label': self.get_text('birth_year'),
+                'placeholder': self.get_text('placeholder_birth_year')
             }
         }
         
@@ -191,7 +191,7 @@ class AppGUI:
         
         self.active_field = None
         self.running = True
-        self.search_running = False
+        self.search_running = SharedBoolean(False)
         # Load saved config
         self.load_saved_config()
         
@@ -245,7 +245,7 @@ class AppGUI:
         self.screen.fill(self.WHITE)
         
         # Draw title first
-        title = self.render_text(get_text('app_title'), self.BLACK, 24)
+        title = self.render_text(self.get_text('app_title'), self.BLACK, 24)
         title_rect = title.get_rect(centerx=self.width//2, y=30)  # Fixed position at top
         self.screen.blit(title, title_rect)
         
@@ -301,10 +301,10 @@ class AppGUI:
         
         # Draw buttons with updated styling
         button_y = self.fields['birth_year']['rect'].bottom + 30
-        for button, text in [(self.start_button, get_text('start')), 
-                           (self.stop_button, get_text('stop'))]:
+        for button, text in [(self.start_button, self.get_text('start')), 
+                           (self.stop_button, self.get_text('stop'))]:
             is_start = button == self.start_button
-            is_enabled = (is_start and not self.search_running) or (not is_start and self.search_running)
+            is_enabled = (is_start and not self.search_running.get()) or (not is_start and self.search_running.get())
             is_hovered = button.collidepoint(pygame.mouse.get_pos())
             
             if is_enabled:
@@ -325,8 +325,8 @@ class AppGUI:
             self.screen.blit(text_surface, text_rect)
         
         # Add notification text under buttons with more space - split into two lines
-        notification_text1 = self.render_text(get_text('sound_notification_1'), self.BLACK)
-        notification_text2 = self.render_text(get_text('sound_notification_2'), self.BLACK)
+        notification_text1 = self.render_text(self.get_text('sound_notification_1'), self.BLACK)
+        notification_text2 = self.render_text(self.get_text('sound_notification_2'), self.BLACK)
         notification_rect1 = notification_text1.get_rect(centerx=self.width//2, y=button_y + 50)
         notification_rect2 = notification_text2.get_rect(centerx=self.width//2, y=button_y + 70)
         self.screen.blit(notification_text1, notification_rect1)
@@ -350,7 +350,7 @@ class AppGUI:
         # Draw footer with more space
         footer_y = self.height - 40  # Give more space from bottom
         url_text = self.render_text(self.url, self.URL_COLOR if not self.url_rect or not self.url_rect.collidepoint(pygame.mouse.get_pos()) else self.URL_HOVER_COLOR)
-        footer_suffix = self.render_text(" - " + get_text('footer').split(' - ')[1], self.BLACK)
+        footer_suffix = self.render_text(" - " + self.get_text('footer').split(' - ')[1], self.BLACK)
         
         total_width = url_text.get_width() + footer_suffix.get_width()
         start_x = (self.width - total_width) // 2
@@ -455,9 +455,9 @@ class AppGUI:
                 self.active_field = None
             
             # Handle button clicks
-            if self.start_button.collidepoint(event.pos) and not self.search_running:
+            if self.start_button.collidepoint(event.pos) and not self.search_running.get():
                 self.start_search()
-            elif self.stop_button.collidepoint(event.pos) and self.search_running:
+            elif self.stop_button.collidepoint(event.pos) and self.search_running.get():
                 self.stop_search()
         
         elif event.type == pygame.KEYDOWN:
@@ -473,18 +473,18 @@ class AppGUI:
             return
         
         self.save_config()
-        self.search_running = True
+        self.search_running.set(True)
         self.status = "Running..."
         
         # Start the search in a separate thread
-        self.search_thread_1 = threading.Thread(target=self.run_search, args=('bonjoursante', self.search_running))
+        self.search_thread_1 = threading.Thread(target=self.run_search, args=('bonjoursante', self.search_running,))
         self.search_thread_1.daemon = True
         self.search_thread_1.start()
-        # self.search_thread_2 = threading.Thread(target=self.run_search, args=('rvsq', self.search_running))
+        # self.search_thread_2 = threading.Thread(target=self.run_search, args=('rvsq', self.search_running,))
         # self.search_thread_2.daemon = True
         # self.search_thread_2.start()
     def stop_search(self):
-        self.search_running = False
+        self.search_running.set(False)
         self.status = "Stopping..."
 
     def run_search(self,website, search_running):
@@ -495,7 +495,7 @@ class AppGUI:
             }
         }
         
-        while self.search_running:
+        while search_running.get():
             try:
                 if(website == 'rvsq'):
                     browser.run_automation_rvsq(config, search_running)
@@ -517,6 +517,25 @@ class AppGUI:
     def update_language(self):
         """Update all text elements when language changes"""
         for field_name in self.fields:
-            self.fields[field_name]['label'] = get_text(field_name)
-            self.fields[field_name]['placeholder'] = get_text(f'placeholder_{field_name}')
-        self.status = get_text('ready')
+            self.fields[field_name]['label'] = self.get_text(field_name)
+            self.fields[field_name]['placeholder'] = self.get_text(f'placeholder_{field_name}')
+        self.status = self.get_text('ready')
+
+
+    def get_text(self, key):
+        """Get translated text for current language"""
+        return translations.get(self.current_language, translations['English']).get(key, key)
+
+class SharedBoolean:
+    def __init__(self, initial_value):
+        self.value = initial_value
+        self.lock = threading.Lock()
+
+    def set(self, new_value):
+        with self.lock:
+            self.value = new_value
+
+    def get(self):
+        with self.lock:
+            return self.value
+        

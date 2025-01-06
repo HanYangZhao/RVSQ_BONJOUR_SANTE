@@ -1,5 +1,4 @@
 languages = ['Français', 'English', 'Español', 'Italiano', 'Kreyòl', '中文', 'हिंदी']
-current_language = 'Francais'
 translations = {
     'Français': {
         'first_name': 'Prénom',
