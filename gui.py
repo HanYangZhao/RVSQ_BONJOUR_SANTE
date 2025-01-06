@@ -1,7 +1,7 @@
 import pygame
 import threading
 import webbrowser
-from languages import current_language, translations, languages
+from languages import translations, languages
 import browser
 import sys
 import json
@@ -63,6 +63,10 @@ class AppGUI:
             self.main_font = default_font
             self.log_font = default_font
         
+
+        # Autobook appointement
+        self.autobook = True
+
         # Initialize translations first
         self.translations = translations
         
@@ -88,7 +92,7 @@ class AppGUI:
         self.field_width = 400
         self.field_height = 40
         start_y = 250  # Position for first input field
-        spacing = 55  # Spacing between fields
+        spacing = 60  # Spacing between fields
         self.center_x = (self.width - self.field_width) // 2
         
         # Load logo
@@ -142,21 +146,33 @@ class AppGUI:
                 'label': self.get_text('postal_code'),
                 'placeholder': self.get_text('placeholder_postal_code')
             },
+            'phone': {
+                'text': '',
+                'rect': pygame.Rect(self.center_x, start_y + spacing*5, self.field_width, self.field_height),
+                'label': self.get_text('cellphone'),
+                'placeholder': self.get_text('placeholder_cellphone')
+            },
+            'email': {
+                'text': '',
+                'rect': pygame.Rect(self.center_x, start_y + spacing*6, self.field_width, self.field_height),
+                'label': self.get_text('email'),
+                'placeholder': self.get_text('placeholder_email')
+            },
             'birth_day': {
                 'text': '',
-                'rect': pygame.Rect(self.center_x, start_y + spacing*5, self.field_width//3 - 10, self.field_height),
+                'rect': pygame.Rect(self.center_x, start_y + spacing*7, self.field_width//3 - 10, self.field_height),
                 'label': self.get_text('birth_day'),
                 'placeholder': self.get_text('placeholder_birth_day')
             },
             'birth_month': {
                 'text': '',
-                'rect': pygame.Rect(self.center_x + self.field_width//3, start_y + spacing*5, self.field_width//3 - 10, self.field_height),
+                'rect': pygame.Rect(self.center_x + self.field_width//3, start_y + spacing*7, self.field_width//3 - 10, self.field_height),
                 'label': self.get_text('birth_month'),
                 'placeholder': self.get_text('placeholder_birth_month')
             },
             'birth_year': {
                 'text': '',
-                'rect': pygame.Rect(self.center_x + 2*(self.field_width//3), start_y + spacing*5, self.field_width//3, self.field_height),
+                'rect': pygame.Rect(self.center_x + 2*(self.field_width//3), start_y + spacing*7, self.field_width//3, self.field_height),
                 'label': self.get_text('birth_year'),
                 'placeholder': self.get_text('placeholder_birth_year')
             }
@@ -166,7 +182,7 @@ class AppGUI:
         button_width = 100
         button_height = 35
         button_spacing = 10
-        buttons_y = start_y + spacing*6 + 10  # Adjusted for new fields
+        buttons_y = start_y + spacing*8 + 10  # Adjusted for new fields
         
         # Center buttons
         total_buttons_width = (button_width * 2) + button_spacing
@@ -339,7 +355,7 @@ class AppGUI:
         pygame.draw.rect(self.screen, self.GRAY, self.log_rect, 1, border_radius=6)
         
         # Draw log messages with subtle alternating backgrounds
-        for i, message in enumerate(default_message_queue[-8:]):  # Show only last 8 messages
+        for i, message in enumerate(default_message_queue[-5:]):  # Show only last 8 messages
             y_pos = self.log_rect.y + 5 + i*20
             if i % 2 == 0:
                 row_rect = pygame.Rect(self.log_rect.x + 2, y_pos, self.log_rect.width - 4, 20)
@@ -477,7 +493,7 @@ class AppGUI:
         self.status = "Running..."
         
         # Start the search in a separate thread
-        self.search_thread_1 = threading.Thread(target=self.run_search, args=('bonjoursante', self.search_running,))
+        self.search_thread_1 = threading.Thread(target=self.run_search, args=('bonjoursante', self.search_running, self.autobook))
         self.search_thread_1.daemon = True
         self.search_thread_1.start()
         # self.search_thread_2 = threading.Thread(target=self.run_search, args=('rvsq', self.search_running,))
@@ -487,7 +503,7 @@ class AppGUI:
         self.search_running.set(False)
         self.status = "Stopping..."
 
-    def run_search(self,website, search_running):
+    def run_search(self,website, search_running, autobook):
         config = {
             "personal_info": {
                 field: self.fields[field]['text']
@@ -500,7 +516,7 @@ class AppGUI:
                 if(website == 'rvsq'):
                     browser.run_automation_rvsq(config, search_running)
                 elif ( website == 'bonjoursante'):
-                    browser.run_automation_bonjoursante(config, search_running)
+                    browser.run_automation_bonjoursante(config, search_running, autobook)
             except Exception as e:
                 log_message(f"Error: {str(e)}")
             finally:

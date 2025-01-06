@@ -202,7 +202,7 @@ def run_automation_rvsq(config, search_running):
                 context.close()
                 browser.close()
 
-def run_automation_bonjoursante(config, search_running):
+def run_automation_bonjoursante(config, search_running, autobook):
     # Create screenshots directories
     for directory in ["screenshots", "error_screenshots"]:
         if not os.path.exists(directory):
@@ -281,15 +281,26 @@ def run_automation_bonjoursante(config, search_running):
                     # print('Aucun rendez-vous ne correspond à vos critères de recherche' in iframe)
                     if frameLocator.locator('app-locked-walkin-availability[data-test="locked-walkin-availability"]').count() > 0 :
                         slot_found(page)
-                        frameLocator.locator('button#[data-test="confirm-selection-button"]').click()
-                        frameLocator.locator('app-registration.ng-star-inserted').wait_for(state = 'visible') # wait for the 'Inscription du patient' to load
-
-                        
-                        search_running.set(False)
-                        context.set_default_timeout(240000) # wait for 4 imnutes
-                        page.wait_for_timeout(240000)
-                        # log_message('[BonjourSante] Failed to book slot Bonjour Sante, timer expired')
-                        # raise RuntimeError('Failed to book slot Bonjour Sante, timer expired')
+                        if (autobook):
+                            frameLocator.locator('button[data-test="confirm-selection-button"]').click()
+                            #load the next page
+                            frameLocator.locator('app-registration.ng-star-inserted').wait_for(state = 'visible') # wait for the 'Inscription du patient' to load
+                            frameLocator.locator('input#cellPhone').fill(format_phone_number(personal_info['cellphone']))
+                            frameLocator.locator('input#email').fill((personal_info['email']))
+                            frameLocator.locator('select#reasons').select_option({'value' : '28'}) # Reason : Autres
+                            frameLocator.locator('#confirmation-checkbox-input').check()
+                            frameLocator.locator('#confirm').click()
+                            search_running.set(False)
+                            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                            screenshot_path = os.path.join("screenshots", f"slot_confirmed_{timestamp}.png")
+                            page.screenshot(path=screenshot_path, full_page=True)
+                            log_message(f"Screenshot saved: {screenshot_path}")
+                            break
+                        else:
+                            context.set_default_timeout(240000) # wait for 4 imnutes
+                            page.wait_for_timeout(240000)
+                            log_message('[BonjourSante] Failed to book slot Bonjour Sante, timer expired')
+                            raise RuntimeError('Failed to book slot Bonjour Sante, timer expired')
                     elif frameLocator.locator('div.t-alert-content').count() > 0 :
                         log_message("[BonjourSante] Une erreur est survenue lors de la recherche de consultations.")
                         frameLocator.locator('a.link').click()
@@ -326,3 +337,8 @@ def run_automation_bonjoursante(config, search_running):
                 context.close()
                 browser.close()
 
+
+def format_phone_number(number):
+    if len(number) == 10 and number.isdigit():
+        return f"({number[:3]}) {number[3:6]}-{number[6:]}"
+    raise ValueError("Invalid phone number format")
